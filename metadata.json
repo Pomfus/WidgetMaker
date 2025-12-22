@@ -1,0 +1,5 @@
+{
+  "name": "IPS Ticker Widget",
+  "description": "A customizable OBS widget that displays YouTube channel members from a CSV export, featuring tier filtering and multiple aviation-themed aesthetic styles.",
+  "requestFramePermissions": []
+}
