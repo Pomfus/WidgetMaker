@@ -1,15 +1,20 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 
-// Immediate polyfill for the process object used by the Gemini SDK.
-// Electron doesn't expose 'process' to the renderer for security reasons
-// by default, so we define it here for the SDK to function.
+/**
+ * PRODUCTION NOTE FOR CPANEL:
+ * 1. Open this file in the cPanel File Manager Editor.
+ * 2. Paste your Gemini API Key between the empty quotes below.
+ * 3. Save the file.
+ * 
+ * WARNING: Since this is client-side code, your key will be visible 
+ * to anyone who views the page source. Keep this URL private.
+ */
 if (typeof (window as any).process === 'undefined') {
   (window as any).process = { 
     env: { 
-      API_KEY: '' 
+      API_KEY: '' // <-- PASTE YOUR KEY HERE
     } 
   };
 }
@@ -23,5 +28,5 @@ if (rootElement) {
     </React.StrictMode>
   );
 } else {
-  console.error("Desktop App Critical Failure: Root mount point not found.");
+  console.error("Critical Failure: Root mount point not found.");
 }

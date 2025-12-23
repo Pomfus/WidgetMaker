@@ -33,25 +33,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   const themeCategories: Record<string, TickerTheme[]> = {
-    'Squadron Alpha': ['hud', 'strike', 'horizon', 'radar', 'vintage'],
-    'Combat Wing': ['tomcat', 'raptor', 'flanker', 'afterburner', 'dogfight'],
-    'Instrument Panel': ['altimeter', 'transponder', 'squawk', 'blackbox', 'glasscockpit'],
-    'Sky & Space': ['stratosphere', 'aurora', 'sunset', 'nightflight', 'clearskies'],
-    'Heritage Fleet': ['kittyhawk', 'spitfire', 'apollo', 'voyager', 'propeller'],
-    'Aviation Service': ['concorde', 'firstclass', 'terminal', 'jetstream', 'mach1']
+    'Sector: Tactical Wing': ['tomcat', 'raptor', 'flanker', 'afterburner', 'dogfight', 'mach1', 'strike', 'falcon', 'harrier', 'phantom', 'mustang', 'zero', 'thunderbolt', 'delta', 'vigilante', 'intruder'],
+    'Sector: Control Tower': ['radar', 'tower', 'terminal', 'signal', 'beacon', 'relay', 'uplink', 'comms', 'frequency', 'static', 'bandwidth', 'latency'],
+    'Sector: Glass Cockpit': ['hud', 'altimeter', 'transponder', 'squawk', 'blackbox', 'glasscockpit', 'analog', 'digital', 'gforce', 'pitch', 'yaw', 'roll', 'throttle', 'flaps', 'trim', 'gyro'],
+    'Sector: Atmospherics': ['stratosphere', 'aurora', 'sunset', 'nightflight', 'clearskies', 'stormcloud', 'tailwind', 'cirrus', 'cumulus', 'overcast', 'gale', 'zephyr', 'monsoon', 'tornado', 'cyclone', 'blizzard'],
+    'Sector: Deep Space': ['apollo', 'voyager', 'nebula', 'eventhorizon', 'supernova', 'pulsar', 'andromeda', 'galactic', 'cosmos', 'orbit', 'zenith', 'nadir', 'eclipse', 'sol', 'lunar', 'martian'],
+    'Sector: Cyber Ops': ['neondrive', 'cyberdeck', 'datalink', 'mainframe', 'glitch', 'neural', 'singularity', 'dyson', 'proxy', 'kernel', 'root', 'shell', 'binary', 'crypt', 'cipher', 'hack'],
+    'Sector: Retro Relay': ['vintage', 'polaroid', 'commodore', 'crt', 'blueprint', 'steampunk', 'paper', 'typewriter', 'vinyl', 'cassette', 'film', 'grainy', 'sepia', 'monochrome', 'amber', 'phosphor'],
+    'Sector: Elements': ['forest', 'deepsea', 'volcano', 'arctic', 'desert', 'jungle', 'moss', 'coral', 'magma', 'frost', 'dune', 'canopy', 'ridge', 'tundra', 'oasis', 'reef'],
+    'Sector: Luxury Fleet': ['firstclass', 'platinum', 'onyx', 'goldleaf', 'marble', 'velvet', 'silk', 'cashmere', 'diamond', 'emerald', 'sapphire', 'ruby', 'ivory', 'quartz', 'granite', 'slate'],
+    'Sector: Aviation Heritage': ['concorde', 'jetstream', 'horizon', 'kittyhawk', 'spitfire', 'propeller', 'terminal_b']
   };
 
   const hullShapes: { id: HullShape; label: string }[] = [
-    { id: 'full', label: 'Full Span' },
+    { id: 'full', label: 'Classic Bar' },
+    { id: 'full-bottom', label: 'Full Bottom' },
+    { id: 'window', label: 'Standard HUD' },
+    { id: 'window-glass', label: 'Glass HUD' },
+    { id: 'window-minimal', label: 'Minimal HUD' },
+    { id: 'window-tactical', label: 'Tactical HUD' },
     { id: 'chamfered', label: 'Chamfered' },
-    { id: 'stealth', label: 'Stealth Facet' },
-    { id: 'wing-root', label: 'Wing Root' },
-    { id: 'hud-bracket', label: 'HUD Bracket' },
-    { id: 'console', label: 'Console Base' }
+    { id: 'console', label: 'Console' }
   ];
 
   return (
-    <div className="bg-slate-900 text-white p-6 rounded-xl shadow-2xl border border-slate-700 max-w-md w-full overflow-y-auto max-h-[85vh]">
+    <div className="bg-slate-900 text-white p-6 rounded-xl shadow-2xl border border-slate-700 max-w-md w-full overflow-y-auto max-h-[85vh] custom-scrollbar">
       <h2 className="text-2xl font-black mb-6 flex items-center gap-2 tracking-tighter italic">
         <span className="text-cyan-500">CONTROL</span> TOWER
       </h2>
@@ -63,19 +69,45 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       )}
 
       <div className="space-y-8">
+        {/* Custom Message Section */}
+        <section className="bg-slate-800/80 p-5 rounded-xl border border-slate-700 shadow-inner">
+          <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-400">Broadcast Message</label>
+          <textarea
+            value={settings.customMessage}
+            onChange={(e) => updateSetting('customMessage', e.target.value)}
+            placeholder="Type your custom announcement here..."
+            className="w-full h-20 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-medium focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all placeholder:text-slate-700 resize-none"
+          />
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {(['none', 'start', 'end'] as const).map(pos => (
+              <button
+                key={pos}
+                onClick={() => updateSetting('customMessagePosition', pos)}
+                className={`px-2 py-2 rounded text-[9px] font-black transition-all border ${
+                  settings.customMessagePosition === pos 
+                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' 
+                    : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {pos.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Theme Selector */}
         <section>
-          <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Aesthetic Presets</label>
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+          <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Aesthetic Presets (100+)</label>
+          <div className="space-y-6 max-h-[32rem] overflow-y-auto pr-2 custom-scrollbar">
             {Object.entries(themeCategories).map(([cat, themes]) => (
-              <div key={cat}>
-                <h4 className="text-[9px] text-slate-600 mb-1 font-bold uppercase">{cat}</h4>
-                <div className="grid grid-cols-2 gap-2 mb-3">
+              <div key={cat} className="border-b border-slate-800 pb-4">
+                <h4 className="text-[10px] text-cyan-500/70 mb-2 font-black uppercase tracking-widest">{cat}</h4>
+                <div className="grid grid-cols-2 gap-2">
                   {themes.map(t => (
                     <button
                       key={t}
                       onClick={() => setSettings(prev => ({ ...prev, ...THEMES[t], theme: t }))}
-                      className={`px-3 py-2 rounded text-[10px] font-black transition-all border ${
+                      className={`px-3 py-2 rounded text-[9px] font-black transition-all border text-left truncate ${
                         settings.theme === t 
                           ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]' 
                           : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'
@@ -93,7 +125,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         {/* Hull Shape Selector */}
         <section>
           <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-500">Hull Geometry</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {hullShapes.map(s => (
               <button
                 key={s.id}
@@ -136,37 +168,37 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <section className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
            <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Visibility</label>
            <div className="flex flex-wrap gap-4">
-            <Toggle label="Avatars" checked={settings.showAvatars} onChange={v => updateSetting('showAvatars', v)} />
-            <Toggle label="Tiers" checked={settings.showTiers} onChange={v => updateSetting('showTiers', v)} />
-            <Toggle label="Duration" checked={settings.showDuration} onChange={v => updateSetting('showDuration', v)} />
+            <Toggle label="Avatars" checked={settings.showAvatars} onChange={(v: boolean) => updateSetting('showAvatars', v)} />
+            <Toggle label="Tiers" checked={settings.showTiers} onChange={(v: boolean) => updateSetting('showTiers', v)} />
+            <Toggle label="Duration" checked={settings.showDuration} onChange={(v: boolean) => updateSetting('showDuration', v)} />
           </div>
         </section>
 
         {/* Dimensions Sliders */}
         <section className="space-y-6 bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
           <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-500">Hull Dimensions</label>
-          <Slider label="Widget Width" min={10} max={100} value={settings.widgetWidth} onChange={v => updateSetting('widgetWidth', v)} unit="%" />
-          <Slider label="Overall Height" min={40} max={400} value={settings.widgetHeight} onChange={v => updateSetting('widgetHeight', v)} unit="px" />
+          <Slider label="Widget Width" min={10} max={100} value={settings.widgetWidth} onChange={(v: number) => updateSetting('widgetWidth', v)} unit="%" />
+          <Slider label="Overall Height" min={40} max={400} value={settings.widgetHeight} onChange={(v: number) => updateSetting('widgetHeight', v)} unit="px" />
         </section>
 
         {/* Sliders */}
         <section className="space-y-6">
-          <Slider label="Ground Speed" min={5} max={300} value={settings.speed} onChange={v => updateSetting('speed', v)} unit="s" />
-          <Slider label="Text Scale" min={12} max={100} value={settings.fontSize} onChange={v => updateSetting('fontSize', v)} unit="px" />
-          <Slider label="Hull Opacity" min={0} max={100} value={settings.backgroundOpacity * 100} onChange={v => updateSetting('backgroundOpacity', v / 100)} unit="%" />
-          <Slider label="Kerning (Letter Space)" min={-10} max={40} value={settings.letterSpacing} onChange={v => updateSetting('letterSpacing', v)} unit="px" />
-          <Slider label="Pod Compression" min={0.5} max={2.0} value={settings.lineHeight} onChange={v => updateSetting('lineHeight', v)} step={0.1} />
-          <Slider label="Flight Gap" min={0} max={500} value={settings.gap} onChange={v => updateSetting('gap', v)} unit="px" />
+          <Slider label="Ground Speed" min={5} max={300} value={settings.speed} onChange={(v: number) => updateSetting('speed', v)} unit="s" />
+          <Slider label="Text Scale" min={12} max={100} value={settings.fontSize} onChange={(v: number) => updateSetting('fontSize', v)} unit="px" />
+          <Slider label="Hull Opacity" min={0} max={100} value={settings.backgroundOpacity * 100} onChange={(v: number) => updateSetting('backgroundOpacity', v / 100)} unit="%" />
+          <Slider label="Kerning (Letter Space)" min={-10} max={40} value={settings.letterSpacing} onChange={(v: number) => updateSetting('letterSpacing', v)} unit="px" />
+          <Slider label="Pod Compression" min={0.5} max={2.0} value={settings.lineHeight} onChange={(v: number) => updateSetting('lineHeight', v)} step={0.1} />
+          <Slider label="Flight Gap" min={0} max={500} value={settings.gap} onChange={(v: number) => updateSetting('gap', v)} unit="px" />
         </section>
 
         {/* Colors */}
         <section>
            <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Exterior Finish</label>
            <div className="grid grid-cols-2 gap-4">
-            <ColorInput label="Primary Hull" value={settings.textColor} onChange={v => updateSetting('textColor', v)} />
-            <ColorInput label="Landing Lights" value={settings.accentColor} onChange={v => updateSetting('accentColor', v)} />
-            <ColorInput label="Beacon" value={settings.durationColor} onChange={v => updateSetting('durationColor', v)} />
-            <ColorInput label="Base Plate" value={settings.backgroundColor} onChange={v => updateSetting('backgroundColor', v)} />
+            <ColorInput label="Primary Hull" value={settings.textColor} onChange={(v: string) => updateSetting('textColor', v)} />
+            <ColorInput label="Landing Lights" value={settings.accentColor} onChange={(v: string) => updateSetting('accentColor', v)} />
+            <ColorInput label="Beacon" value={settings.durationColor} onChange={(v: string) => updateSetting('durationColor', v)} />
+            <ColorInput label="Base Plate" value={settings.backgroundColor} onChange={(v: string) => updateSetting('backgroundColor', v)} />
           </div>
         </section>
 
@@ -182,6 +214,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       </div>
       
       <style>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #334155 transparent;
+        }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -196,9 +232,9 @@ const Toggle = ({ label, checked, onChange }: any) => (
       type="checkbox" 
       checked={checked} 
       onChange={e => onChange(e.target.checked)}
-      className="w-4 h-4 rounded text-cyan-500 bg-slate-800 border-slate-600"
+      className="w-4 h-4 rounded text-cyan-500 bg-slate-800 border-slate-600 focus:ring-offset-slate-900"
     />
-    <span className="text-[10px] font-black group-hover:text-cyan-400 transition-colors uppercase">{label}</span>
+    <span className="text-[10px] font-black group-hover:text-cyan-400 transition-colors uppercase select-none">{label}</span>
   </label>
 );
 
@@ -206,13 +242,13 @@ const Slider = ({ label, min, max, value, onChange, unit = "", step = 1 }: any) 
   <div>
     <div className="flex justify-between text-[10px] font-bold mb-1 uppercase tracking-widest text-slate-400">
       <label>{label}</label>
-      <span>{value}{unit}</span>
+      <span className="tabular-nums">{value}{unit}</span>
     </div>
     <input 
       type="range" min={min} max={max} step={step}
       value={value}
       onChange={e => onChange(parseFloat(e.target.value))}
-      className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+      className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400 transition-colors"
     />
   </div>
 );
@@ -220,11 +256,13 @@ const Slider = ({ label, min, max, value, onChange, unit = "", step = 1 }: any) 
 const ColorInput = ({ label, value, onChange }: any) => (
   <div>
     <label className="block text-[9px] mb-1 uppercase font-bold text-slate-500 tracking-wider">{label}</label>
-    <input 
-      type="color" 
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full h-10 bg-slate-800 rounded cursor-pointer border border-slate-700 hover:border-slate-500 transition-colors"
-    />
+    <div className="relative group">
+      <input 
+        type="color" 
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full h-10 bg-slate-800 rounded cursor-pointer border border-slate-700 hover:border-slate-500 transition-colors outline-none p-1"
+      />
+    </div>
   </div>
 );
