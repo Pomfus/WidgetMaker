@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { Member, TickerSettings, HullShape } from '../types.ts';
 
@@ -20,7 +19,7 @@ const RankIcon = ({ level, color, size }: { level: number; color: string; size: 
   if (level >= 5) {
     return (
       <svg {...iconProps} strokeWidth="1.5">
-        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill={color + '33'} />
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill={color + '33'} />
         <path d="M7 20C4.5 18 3 15 3 12C3 7 7 3 12 3C17 3 21 7 21 12C21 15 19.5 18 17 20" />
       </svg>
     );
@@ -55,11 +54,25 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
     const selectedTiers = settings.tierFilter.length > 0 ? settings.tierFilter : Array.from(new Set(members.map(m => m.tier)));
     
     selectedTiers.forEach(t => {
-      groups[t] = members.filter(m => m.tier === t).sort((a, b) => parseInt(b.totalMonths) - parseInt(a.totalMonths));
+      const filtered = members.filter(m => m.tier === t);
+      
+      const sorted = [...filtered].sort((a, b) => {
+        if (settings.sortOrder === 'alpha') {
+          return a.name.localeCompare(b.name);
+        }
+        const aMonths = parseFloat(a.totalMonths) || 0;
+        const bMonths = parseFloat(b.totalMonths) || 0;
+        if (settings.sortOrder === 'duration_asc') {
+          return aMonths - bMonths;
+        }
+        return bMonths - aMonths; // duration_desc
+      });
+
+      groups[t] = sorted;
     });
 
     return Object.entries(groups).filter(([_, list]) => list.length > 0);
-  }, [members, settings.tierFilter]);
+  }, [members, settings.tierFilter, settings.sortOrder]);
 
   const currentTierData = tiersManifest[activeTierIdx % tiersManifest.length];
   const currentMembers = currentTierData ? currentTierData[1] : [];
@@ -104,13 +117,15 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
   };
 
   const formatDuration = (totalMonths: string) => {
-    const m = parseInt(totalMonths) || 0;
-    if (m >= 12) {
-      const yrs = Math.floor(m / 12);
-      const rem = m % 12;
-      return `${yrs}YR ${rem}MNTHS`;
+    // Math.floor to handle any float months from parsing correctly
+    const m = Math.floor(parseFloat(totalMonths) || 0);
+    const yrs = Math.floor(m / 12);
+    const rem = m % 12;
+    if (yrs > 0) {
+      const yrLabel = yrs === 1 ? 'YR' : 'YRS';
+      return `${yrs}${yrLabel} ${rem}MNTHS`;
     }
-    return `${m} MONTHS`;
+    return `${m} MNTHS`;
   };
 
   const hexToRgba = (hex: string, alpha: number) => {
@@ -272,7 +287,7 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
             className="font-black uppercase tracking-[0.2em] opacity-40 leading-none mt-1 text-center"
             style={{ fontSize: `${squadronFontSize}px` }}
           >
-            MANIFEST
+            MEMBERS
           </span>
         </div>
       </div>
@@ -314,7 +329,13 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
               )
             )}
             
-            <div className="flex flex-col items-center justify-center text-center" style={{ lineHeight: settings.lineHeight }}>
+            <div 
+              className="flex flex-col items-center justify-center text-center transition-transform duration-300 ease-out" 
+              style={{ 
+                lineHeight: settings.lineHeight,
+                transform: `translateY(${settings.verticalOffset}px)`
+              }}
+            >
               <span 
                 className={`name-label ${item.isMessage ? 'italic font-black' : ''}`} 
                 style={{ 
@@ -327,12 +348,12 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
               </span>
               <div className="flex items-center gap-2" style={{ marginTop: '2px' }}>
                 {!item.isMessage && settings.showDuration && (
-                  <span className="meta-label" style={{ color: settings.durationColor }}>
+                  <span className="meta-label" style={{ color: settings.durationColor, fontSize: `${settings.durationFontSize}px` }}>
                     {formatDuration(item.totalMonths).toUpperCase()}
                   </span>
                 )}
                 {item.isMessage && (
-                  <span className="meta-label text-[8px] animate-pulse" style={{ color: settings.accentColor }}>
+                  <span className="meta-label text-[8px] animate-pulse" style={{ color: settings.accentColor, fontSize: `${settings.durationFontSize}px` }}>
                     SYSTEM BROADCAST
                   </span>
                 )}
@@ -351,7 +372,7 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
         @keyframes scan { 0% { transform: translate3d(0, -100%, 0); } 100% { transform: translate3d(0, 100%, 0); } }
         .scan-line { position: absolute; width: 100%; height: 2px; animation: scan 4s linear infinite; box-shadow: 0 0 15px currentColor; will-change: transform; }
         .name-label { font-weight: 800; font-family: 'Inter', sans-serif; transition: all 0.3s; }
-        .meta-label { font-size: 10px; font-weight: 900; font-family: 'Inter', sans-serif; letter-spacing: 0.1em; }
+        .meta-label { font-weight: 900; font-family: 'Inter', sans-serif; letter-spacing: 0.1em; }
         .glitch-active { filter: hue-rotate(90deg) brightness(1.5); transform: translate3d(-50%, 10px, 0) skewX(10deg); opacity: 0.5; }
         .separator-icon { opacity: 0.6; display: flex; align-items: center; justify-content: center; user-select: none; }
 

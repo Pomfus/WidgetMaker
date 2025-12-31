@@ -1,9 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
-import { Member, TickerSettings, THEMES } from './types.ts';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Member, TickerSettings, THEMES, SavedFavorite, SortOrder } from './types.ts';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { Ticker } from './components/Ticker.tsx';
 import { analyzeCsvStructure, getTierInsights } from './services/geminiService.ts';
+
+const STORAGE_KEY = 'ips_ticker_favorites';
 
 const App: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -11,9 +12,12 @@ const App: React.FC = () => {
   const [insight, setInsight] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
+  const [favorites, setFavorites] = useState<SavedFavorite[]>([]);
+  
   const [settings, setSettings] = useState<TickerSettings>({
     speed: 60,
     fontSize: 24,
+    durationFontSize: 10,
     textColor: '#00ffff',
     backgroundColor: '#001414',
     backgroundOpacity: 0.9,
@@ -30,13 +34,54 @@ const App: React.FC = () => {
     lineHeight: 1,
     widgetWidth: 100,
     widgetHeight: 100,
+    verticalOffset: 0,
     customMessage: '',
-    customMessagePosition: 'none'
+    customMessagePosition: 'none',
+    sortOrder: 'duration_desc'
   });
 
+  // Load favorites from local storage
   useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        setFavorites(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse favorites", e);
+      }
+    }
     setInsight("Upload your YouTube 'Members list' CSV to begin.");
   }, []);
+
+  const saveFavorite = (name: string) => {
+    const newFavorite: SavedFavorite = {
+      id: crypto.randomUUID(),
+      name: name || `Loadout ${favorites.length + 1}`,
+      timestamp: Date.now(),
+      settings,
+      members
+    };
+    const updated = [newFavorite, ...favorites];
+    setFavorites(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const deleteFavorite = (id: string) => {
+    const updated = favorites.filter(f => f.id !== id);
+    setFavorites(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const loadFavorite = (id: string) => {
+    const fav = favorites.find(f => f.id === id);
+    if (fav) {
+      setSettings(fav.settings);
+      setMembers(fav.members);
+      const uniqueTiers = Array.from(new Set(fav.members.map(m => m.tier)));
+      setTiers(uniqueTiers);
+      setInsight(`Loadout "${fav.name}" restored from Hangar.`);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -63,12 +108,19 @@ const App: React.FC = () => {
             mapping = { nameIndex: 0, tierIndex: 1, monthsIndex: 2, idIndex: 3 };
         }
 
-        const parsedMembers: Member[] = rows.slice(1).map(row => ({
-          name: row[mapping!.nameIndex]?.replace(/"/g, '').trim() || 'Anonymous',
-          tier: row[mapping!.tierIndex]?.replace(/"/g, '').trim() || 'Default',
-          totalMonths: row[mapping!.monthsIndex]?.replace(/"/g, '').trim() || '0',
-          channelId: row[mapping!.idIndex]?.replace(/"/g, '').trim() || Math.random().toString(),
-        }));
+        const parsedMembers: Member[] = rows.slice(1).map(row => {
+          const rawMonths = row[mapping!.monthsIndex]?.replace(/"/g, '').trim() || '0';
+          // Use parseFloat to preserve decimal points, then floor for total months 
+          // to avoid logic errors with string stripping.
+          const totalMonthsVal = parseFloat(rawMonths.replace(/[^-0-9.]/g, '')) || 0;
+          
+          return {
+            name: row[mapping!.nameIndex]?.replace(/"/g, '').trim() || 'Anonymous',
+            tier: row[mapping!.tierIndex]?.replace(/"/g, '').trim() || 'Default',
+            totalMonths: totalMonthsVal.toString(),
+            channelId: row[mapping!.idIndex]?.replace(/"/g, '').trim() || Math.random().toString(),
+          };
+        });
 
         setMembers(parsedMembers);
         const uniqueTiers = Array.from(new Set(parsedMembers.map(m => m.tier)));
@@ -117,9 +169,10 @@ const App: React.FC = () => {
     const dynamicBg = hexToRgba(settings.backgroundColor, settings.backgroundOpacity);
     const iconSize = Math.max(16, settings.widgetHeight * 0.4);
     const badgeFontSize = Math.max(8, settings.widgetHeight * 0.12);
-    const membersSubLabelSize = Math.max(6, settings.widgetHeight * 0.08);
+    const squadronSubLabelSize = Math.max(6, settings.widgetHeight * 0.08);
 
     const isFullBottom = settings.hullShape === 'full-bottom';
+    const isWindowType = settings.hullShape.startsWith('window');
     const clipPathValue = getClipPathCSS(settings.hullShape);
 
     const htmlContent = `<!DOCTYPE html>
@@ -147,30 +200,46 @@ const App: React.FC = () => {
             ${settings.hullShape === 'window-glass' ? 'backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.2); border-radius: 24px;' : ''}
             ${settings.hullShape === 'window-tactical' ? 'border: 3px solid ' + settings.accentColor + '; box-shadow: 0 0 20px ' + settings.accentColor + '33;' : ''}
             ${settings.hullShape === 'window-minimal' ? 'border-bottom: 2px solid ' + settings.accentColor + ';' : ''}
-            z-index: 1;
+            z-index: 1000;
         }
+        
+        .top-glow { position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: rgba(255,255,255,0.05); z-index: 40; }
+
         .badge {
             position: absolute; left: 0; top: 0; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; align-items: center; padding: 0 24px;
-            border-right: 1px solid rgba(255,255,255,0.1); z-index: 100;
+            border-right: 1px solid rgba(255,255,255,0.1); z-index: 30;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
+        
         .badge-info { border-left: 1px solid rgba(255,255,255,0.05); padding-left: 16px; margin-left: 16px; display: flex; flex-direction: column; justify-content: center; }
-        .tier-name-text { color: ${settings.accentColor}; font-weight: 900; font-style: italic; font-size: ${badgeFontSize}px; line-height: 1; white-space: nowrap; }
-        .members-label { font-size: ${membersSubLabelSize}px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; line-height: 1; margin-top: 4px; }
+        .tier-name-text { color: ${settings.accentColor}; font-weight: 900; font-style: italic; font-size: ${badgeFontSize}px; line-height: 1; white-space: nowrap; text-transform: uppercase; }
+        .members-label { font-size: ${squadronSubLabelSize}px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.4; line-height: 1; margin-top: 4px; }
+        
         .track-container { width: 100%; overflow: hidden; display: flex; align-items: center; }
         .track { display: flex; white-space: nowrap; align-items: center; padding-left: ${Math.max(200, settings.widgetHeight * 3)}px; will-change: transform; }
         .track.animating { animation: tick ${settings.speed}s linear infinite; }
         @keyframes tick { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-50%,0,0); } }
+        
         .member-item { display: flex; align-items: center; gap: 24px; padding: 0 32px; flex-shrink: 0; position: relative; }
         .avatar { border-radius: 50%; border: 2px solid ${settings.accentColor}; width: ${settings.fontSize * 1.5}px; height: ${settings.fontSize * 1.5}px; object-fit: cover; }
-        .name-label { font-weight: 800; font-size: ${settings.fontSize}px; letter-spacing: ${settings.letterSpacing}px; text-transform: uppercase; }
-        .meta-label { font-size: 10px; font-weight: 900; letter-spacing: 0.1em; opacity: 0.8; text-transform: uppercase; }
-        .separator { margin-left: 16px; opacity: 0.6; display: flex; align-items: center; justify-content: center; }
+        
+        .item-text-container { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-center;
+            transform: translateY(${settings.verticalOffset}px); 
+            transition: transform 0.3s ease; 
+            line-height: ${settings.lineHeight};
+        }
+        
+        .name-label { font-weight: 800; font-size: ${settings.fontSize}px; letter-spacing: ${settings.letterSpacing}px; text-transform: uppercase; transition: all 0.3s; }
+        .meta-label { font-size: ${settings.durationFontSize}px; font-weight: 900; letter-spacing: 0.1em; opacity: 0.8; text-transform: uppercase; margin-top: 2px; }
+        .separator { margin-left: 16px; opacity: 0.6; display: flex; align-items: center; justify-content: center; user-select: none; }
+        
         .scan-line { position: absolute; width: 100%; height: 2px; background: ${settings.accentColor}; opacity: 0.15; animation: scan 4s linear infinite; box-shadow: 0 0 15px currentColor; pointer-events: none; z-index: 2; will-change: transform; }
         @keyframes scan { 0% { transform: translate3d(0, -100%, 0); } 100% { transform: translate3d(0, ${settings.widgetHeight}px, 0); } }
 
-        /* Typography Styles */
+        /* Typography Styles Synchronized */
         .theme-hud .name-label { font-weight: 300; text-shadow: 0 0 12px currentColor; }
         .theme-strike .name-label, .theme-afterburner .name-label, .theme-dogfight .name-label, .theme-mach1 .name-label { font-family: 'Bebas Neue'; font-weight: 900; font-style: italic; }
         .theme-radar .name-label, .theme-terminal .name-label, .theme-digital .name-label { font-family: 'Roboto Mono'; font-weight: 800; }
@@ -181,8 +250,9 @@ const App: React.FC = () => {
 </head>
 <body class="theme-${settings.theme}">
     <div id="container">
+        ${isWindowType && settings.hullShape !== 'window-minimal' ? '<div class="top-glow"></div>' : ''}
         <div class="badge" id="badge-ui">
-            <div id="icon-svg" style="display:flex"></div>
+            <div id="icon-svg" style="display:flex; position:relative;"></div>
             <div class="badge-info">
                 <span id="tier-name" class="tier-name-text">...</span>
                 <span class="members-label">MEMBERS</span>
@@ -201,7 +271,8 @@ const App: React.FC = () => {
 
         const getRankIcon = (level, color, size) => {
             const common = 'width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '"';
-            if (level >= 5) return '<svg ' + common + ' stroke-width="1.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="' + color + '33" /><path d="M7 20C4.5 18 3 15 3 12C3 7 7 3 12 3C17 3 21 7 21 12C21 15 19.5 18 17 20" /></svg>';
+            if (level >= 5) return '<svg ' + common + ' stroke-width="1.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="' + color + '33" /><path d="M7 20C4.5 18 3 15 3 12C3 7 7 3 12 3C17 3 21 7 21 12C21 15 19.5 18 17 20" /></svg>';
+            if (level >= 3) return '<svg ' + common + ' stroke-width="2"><path d="M4 8L12 12L20 8" /><path d="M4 14L12 18L20 14" /></svg>';
             return '<svg ' + common + ' stroke-width="2"><path d="M4 12L12 16L20 12" /></svg>';
         };
 
@@ -210,51 +281,40 @@ const App: React.FC = () => {
         };
 
         const getSeparator = (theme) => {
-          // Fighter Wing
           if (['tomcat', 'raptor', 'flanker', 'afterburner', 'strike', 'falcon', 'harrier', 'phantom', 'vigilante', 'intruder'].includes(theme)) return '🛩️';
           if (['mach1', 'mustang', 'zero', 'thunderbolt', 'delta'].includes(theme)) return '🛫';
           if (['dogfight'].includes(theme)) return '⚔️';
-          
-          // Control Tower
           if (['radar', 'terminal', 'relay', 'uplink', 'bandwidth', 'latency'].includes(theme)) return '📡';
           if (['signal', 'comms', 'frequency', 'static'].includes(theme)) return '📶';
           if (['tower', 'beacon'].includes(theme)) return '🚨';
-          
-          // Space
           if (['apollo', 'voyager', 'orbit', 'zenith', 'nadir', 'galactic'].includes(theme)) return '🚀';
           if (['nebula', 'cosmos', 'andromeda', 'lunar', 'martian'].includes(theme)) return '🛰️';
           if (['eventhorizon', 'supernova', 'pulsar', 'eclipse', 'sol'].includes(theme)) return '🛸';
-
-          // Cyber
           if (['neondrive', 'cyberdeck', 'datalink', 'mainframe', 'neural', 'singularity', 'dyson', 'proxy', 'kernel', 'root', 'shell', 'binary', 'crypt', 'cipher', 'hack'].includes(theme)) return '👾';
           if (['glitch'].includes(theme)) return '⚡';
-
-          // Retro
           if (['vintage', 'polaroid', 'commodore', 'typewriter', 'vinyl', 'cassette', 'film'].includes(theme)) return '📟';
           if (['crt', 'blueprint', 'steampunk', 'amber', 'phosphor'].includes(theme)) return '🛠️';
-
-          // Nature
           if (['forest', 'jungle', 'moss', 'canopy'].includes(theme)) return '🌲';
           if (['deepsea', 'coral', 'reef'].includes(theme)) return '🌊';
           if (['volcano', 'magma'].includes(theme)) return '🌋';
           if (['arctic', 'frost', 'blizzard', 'tundra'].includes(theme)) return '❄️';
           if (['desert', 'dune', 'oasis'].includes(theme)) return '🌵';
           if (['stormcloud', 'overcast', 'gale', 'monsoon', 'tornado', 'cyclone'].includes(theme)) return '🌪️';
-
-          // Luxury
           if (['firstclass', 'platinum', 'onyx', 'goldleaf', 'diamond', 'emerald', 'sapphire', 'ruby', 'quartz', 'ivory'].includes(theme)) return '💎';
           if (['velvet', 'silk', 'cashmere', 'marble'].includes(theme)) return '✨';
-
-          // Aviation Service
           if (['concorde', 'jetstream', 'horizon', 'kittyhawk', 'spitfire', 'propeller', 'terminal_b'].includes(theme)) return '✈️';
-
           return '•';
         };
 
         function formatDuration(totalMonths) {
-            const m = parseInt(totalMonths) || 0;
-            if (m >= 12) return Math.floor(m / 12) + 'YR ' + (m % 12) + 'MNTHS';
-            return m + ' MONTHS';
+            const m = Math.floor(parseFloat(totalMonths) || 0);
+            const yrs = Math.floor(m / 12);
+            const rem = m % 12;
+            if (yrs > 0) {
+                const yrLabel = yrs === 1 ? 'YR' : 'YRS';
+                return yrs + yrLabel + ' ' + rem + 'MNTHS';
+            }
+            return m + ' MNTHS';
         }
 
         function updateTier() {
@@ -264,40 +324,57 @@ const App: React.FC = () => {
             
             setTimeout(() => {
                 const tier = (tiers.length > 0) ? tiers[currentTierIdx] : null;
-                document.getElementById('tier-name').innerText = tier ? tier.toUpperCase() : 'BROADCAST';
+                document.getElementById('tier-name').innerText = tier ? tier.toUpperCase() : 'SQUADRON';
                 document.getElementById('icon-svg').innerHTML = getRankIcon(currentTierIdx + 1, settings.accentColor, ${iconSize});
                 
-                let filtered = tier ? membersData.filter(m => m.tier === tier).map(m => ({ ...m, isMessage: false })) : [];
+                let filtered = tier ? membersData.filter(m => m.tier === tier) : [];
+                
+                filtered.sort((a, b) => {
+                  if (settings.sortOrder === 'alpha') return a.name.localeCompare(b.name);
+                  const aMonths = parseFloat(a.totalMonths) || 0;
+                  const bMonths = parseFloat(b.totalMonths) || 0;
+                  if (settings.sortOrder === 'duration_asc') return aMonths - bMonths;
+                  return bMonths - aMonths;
+                });
+
+                let displayItems = filtered.map(m => ({ ...m, isMessage: false }));
                 if (settings.customMessage && settings.customMessagePosition !== 'none') {
                   const msg = { name: settings.customMessage, isMessage: true };
-                  if (settings.customMessagePosition === 'start') filtered = [msg, ...filtered];
-                  else filtered = [...filtered, msg];
+                  if (settings.customMessagePosition === 'start') displayItems = [msg, ...displayItems];
+                  else if (settings.customMessagePosition === 'end') displayItems = [...displayItems, msg];
                 }
 
                 const track = document.getElementById('track');
                 track.innerHTML = '';
-                const list = [...filtered, ...filtered];
+                const list = [...displayItems, ...displayItems];
                 list.forEach(m => {
                     const item = document.createElement('div');
                     item.className = 'member-item';
-                    if (m.isMessage) item.innerHTML = getBroadcastIcon(settings.accentColor, settings.fontSize * 1.5);
-                    else if (settings.showAvatars) {
+                    if (m.isMessage) {
+                        const iconWrapper = document.createElement('div');
+                        iconWrapper.innerHTML = getBroadcastIcon(settings.accentColor, settings.fontSize * 1.5);
+                        item.appendChild(iconWrapper);
+                    } else if (settings.showAvatars) {
                         const img = document.createElement('img'); img.className = 'avatar';
                         img.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(m.name) + '&background=random&color=fff&size=128';
                         item.appendChild(img);
                     }
+                    
                     const info = document.createElement('div');
-                    info.style.display = 'flex'; info.style.flexDirection = 'column'; info.style.alignItems = 'center';
+                    info.className = 'item-text-container';
                     const name = document.createElement('span'); name.className = 'name-label';
                     if (m.isMessage) { name.style.color = settings.accentColor; name.style.fontStyle = 'italic'; }
                     name.innerText = m.name.toUpperCase();
                     info.appendChild(name);
+                    
                     if (!m.isMessage && settings.showDuration) {
                         const dur = document.createElement('span'); dur.className = 'meta-label';
-                        dur.style.color = settings.durationColor; dur.innerText = formatDuration(m.totalMonths);
+                        dur.style.color = settings.durationColor; dur.style.fontSize = settings.durationFontSize + 'px';
+                        dur.innerText = formatDuration(m.totalMonths);
                         info.appendChild(dur);
                     }
                     item.appendChild(info);
+                    
                     const sep = document.createElement('span'); 
                     sep.className = 'separator'; 
                     sep.style.fontSize = settings.fontSize + 'px';
@@ -370,9 +447,9 @@ const App: React.FC = () => {
             <div className="mt-12 text-left w-full border-t border-slate-800 pt-8">
                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deployment Guide</h4>
                <ul className="text-xs space-y-3 text-slate-400 font-medium">
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">01</span> Customize the visual HUD in the Control Tower.</li>
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">02</span> Click "Deploy" to download your standalone .html widget.</li>
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">03</span> Add that file to OBS as a "Browser Source" (Local File).</li>
+                  <li className="flex gap-3"><span className="text-cyan-500 font-black">01</span> Customize visual HUD and fonts.</li>
+                  <li className="flex gap-3"><span className="text-cyan-500 font-black">02</span> Save to **Tactical Archive** for future edits.</li>
+                  <li className="flex gap-3"><span className="text-cyan-500 font-black">03</span> Deploy as standalone .html for OBS.</li>
                </ul>
             </div>
           </div>
@@ -384,6 +461,10 @@ const App: React.FC = () => {
             insight={insight}
             onExport={exportStandaloneWidget}
             hasMembers={members.length > 0}
+            favorites={favorites}
+            onSave={saveFavorite}
+            onDelete={deleteFavorite}
+            onLoad={loadFavorite}
           />
         </div>
       )}

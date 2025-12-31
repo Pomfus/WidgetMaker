@@ -1,4 +1,3 @@
-
 export interface Member {
   name: string;
   tier: string;
@@ -6,6 +5,16 @@ export interface Member {
   channelId: string;
   profileUrl?: string;
 }
+
+export interface SavedFavorite {
+  id: string;
+  name: string;
+  timestamp: number;
+  settings: TickerSettings;
+  members: Member[];
+}
+
+export type SortOrder = 'alpha' | 'duration_desc' | 'duration_asc';
 
 export type TickerTheme = 
   // Fighter Wing
@@ -34,6 +43,7 @@ export type HullShape = 'full' | 'chamfered' | 'console' | 'window' | 'window-gl
 export interface TickerSettings {
   speed: number;
   fontSize: number;
+  durationFontSize: number;
   textColor: string;
   backgroundColor: string;
   backgroundOpacity: number;
@@ -50,14 +60,15 @@ export interface TickerSettings {
   lineHeight: number;
   widgetWidth: number;
   widgetHeight: number;
+  verticalOffset: number;
   customMessage: string;
   customMessagePosition: 'start' | 'end' | 'none';
+  sortOrder: SortOrder;
 }
 
-const aviationBase = { fontSize: 24, letterSpacing: 1, lineHeight: 1, widgetWidth: 100, widgetHeight: 100 };
+const aviationBase = { fontSize: 24, durationFontSize: 10, letterSpacing: 1, lineHeight: 1, widgetWidth: 100, widgetHeight: 100, verticalOffset: 0, sortOrder: 'duration_desc' as SortOrder };
 
 export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
-  // Fighter Wing
   tomcat: { ...aviationBase, textColor: '#e2e8f0', backgroundColor: '#334155', backgroundOpacity: 1.0, accentColor: '#fde047', durationColor: '#cbd5e1', hullShape: 'chamfered' },
   raptor: { ...aviationBase, textColor: '#cbd5e1', backgroundColor: '#0f172a', backgroundOpacity: 0.9, accentColor: '#22d3ee', durationColor: '#94a3b8', hullShape: 'window-tactical' },
   flanker: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#1d4ed8', backgroundOpacity: 1.0, accentColor: '#fbbf24', durationColor: '#bfdbfe', hullShape: 'window' },
@@ -74,8 +85,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   delta: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#1e1b4b', backgroundOpacity: 1.0, accentColor: '#c084fc', durationColor: '#818cf8', hullShape: 'chamfered' },
   vigilante: { ...aviationBase, textColor: '#f8fafc', backgroundColor: '#0f172a', backgroundOpacity: 1.0, accentColor: '#f43f5e', durationColor: '#cbd5e1', hullShape: 'window-glass' },
   intruder: { ...aviationBase, textColor: '#f1f5f9', backgroundColor: '#334155', backgroundOpacity: 1.0, accentColor: '#60a5fa', durationColor: '#94a3b8', hullShape: 'window' },
-
-  // Ground Control
   radar: { ...aviationBase, textColor: '#33ff33', backgroundColor: '#000800', backgroundOpacity: 1.0, accentColor: '#33ff33', durationColor: '#00ff00', hullShape: 'console' },
   tower: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#475569', backgroundOpacity: 1.0, accentColor: '#ef4444', durationColor: '#f1f5f9', hullShape: 'window' },
   terminal: { ...aviationBase, textColor: '#10b981', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#059669', durationColor: '#064e3b', hullShape: 'console' },
@@ -88,8 +97,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   static: { ...aviationBase, textColor: '#94a3b8', backgroundColor: '#0f172a', backgroundOpacity: 1.0, accentColor: '#cbd5e1', durationColor: '#475569', hullShape: 'window' },
   bandwidth: { ...aviationBase, textColor: '#facc15', backgroundColor: '#422006', backgroundOpacity: 1.0, accentColor: '#fde047', durationColor: '#a16207', hullShape: 'window-glass' },
   latency: { ...aviationBase, textColor: '#ef4444', backgroundColor: '#450a0a', backgroundOpacity: 1.0, accentColor: '#fca5a5', durationColor: '#b91c1c', hullShape: 'window-tactical' },
-
-  // Instrument Panel
   hud: { ...aviationBase, textColor: '#00ffff', backgroundColor: '#001414', backgroundOpacity: 0.9, accentColor: '#00ffff', durationColor: '#ffffff', hullShape: 'window' },
   altimeter: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#262626', backgroundOpacity: 1.0, accentColor: '#dc2626', durationColor: '#a3a3a3', hullShape: 'console' },
   transponder: { ...aviationBase, textColor: '#fbbf24', backgroundColor: '#1c1917', backgroundOpacity: 1.0, accentColor: '#fbbf24', durationColor: '#78350f', hullShape: 'chamfered' },
@@ -106,8 +113,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   flaps: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#334155', backgroundOpacity: 1.0, accentColor: '#facc15', durationColor: '#94a3b8', hullShape: 'window' },
   trim: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#1e293b', backgroundOpacity: 1.0, accentColor: '#60a5fa', durationColor: '#475569', hullShape: 'window-minimal' },
   gyro: { ...aviationBase, textColor: '#38bdf8', backgroundColor: '#0c4a6e', backgroundOpacity: 1.0, accentColor: '#f0f9ff', durationColor: '#0ea5e9', hullShape: 'window-glass' },
-
-  // Atmospherics
   stratosphere: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#1e1b4b', backgroundOpacity: 1.0, accentColor: '#c084fc', durationColor: '#e9d5ff', hullShape: 'window-minimal' },
   aurora: { ...aviationBase, textColor: '#4ade80', backgroundColor: '#2e1065', backgroundOpacity: 0.8, accentColor: '#f472b6', durationColor: '#d8b4fe', hullShape: 'chamfered' },
   sunset: { ...aviationBase, textColor: '#fff7ed', backgroundColor: '#431407', backgroundOpacity: 1.0, accentColor: '#f59e0b', durationColor: '#fdba74', hullShape: 'window-minimal' },
@@ -124,8 +129,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   tornado: { ...aviationBase, textColor: '#f1f5f9', backgroundColor: '#334155', backgroundOpacity: 1.0, accentColor: '#64748b', durationColor: '#cbd5e1', hullShape: 'window-tactical' },
   cyclone: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#111827', backgroundOpacity: 1.0, accentColor: '#94a3b8', durationColor: '#4b5563', hullShape: 'window-glass' },
   blizzard: { ...aviationBase, textColor: '#1e293b', backgroundColor: '#f1f5f9', backgroundOpacity: 1.0, accentColor: '#38bdf8', durationColor: '#64748b', hullShape: 'window' },
-
-  // Deep Space
   apollo: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#0f172a', backgroundOpacity: 1.0, accentColor: '#f43f5e', durationColor: '#64748b', hullShape: 'window-tactical' },
   voyager: { ...aviationBase, textColor: '#ccfbf1', backgroundColor: '#134e4a', backgroundOpacity: 1.0, accentColor: '#fbbf24', durationColor: '#2dd4bf', hullShape: 'chamfered' },
   nebula: { ...aviationBase, textColor: '#fdf4ff', backgroundColor: '#4a044e', backgroundOpacity: 1.0, accentColor: '#d946ef', durationColor: '#f0abfc', hullShape: 'window-glass' },
@@ -142,8 +145,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   sol: { ...aviationBase, textColor: '#000000', backgroundColor: '#fbbf24', backgroundOpacity: 1.0, accentColor: '#fffbeb', durationColor: '#b45309', hullShape: 'window' },
   lunar: { ...aviationBase, textColor: '#1e293b', backgroundColor: '#f8fafc', backgroundOpacity: 1.0, accentColor: '#64748b', durationColor: '#64748b', hullShape: 'window-glass' },
   martian: { ...aviationBase, textColor: '#fef2f2', backgroundColor: '#7f1d1d', backgroundOpacity: 1.0, accentColor: '#f43f5e', durationColor: '#fca5a5', hullShape: 'window-tactical' },
-
-  // Cyber Ops
   neondrive: { ...aviationBase, textColor: '#ff00ff', backgroundColor: '#1a001a', backgroundOpacity: 1.0, accentColor: '#00ffff', durationColor: '#ffffff', hullShape: 'window-glass' },
   cyberdeck: { ...aviationBase, textColor: '#00ff00', backgroundColor: '#001a00', backgroundOpacity: 1.0, accentColor: '#ff00ff', durationColor: '#00ff00', hullShape: 'window-tactical' },
   datalink: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#000033', backgroundOpacity: 1.0, accentColor: '#00ffff', durationColor: '#9999ff', hullShape: 'window' },
@@ -160,8 +161,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   crypt: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#111827', backgroundOpacity: 1.0, accentColor: '#fcd34d', durationColor: '#4b5563', hullShape: 'window-glass' },
   cipher: { ...aviationBase, textColor: '#fbbf24', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#fff7ed', durationColor: '#ffffff', hullShape: 'window-tactical' },
   hack: { ...aviationBase, textColor: '#00ff00', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#f0fdf4', durationColor: '#00ff00', hullShape: 'window-tactical' },
-
-  // Retro Systems
   vintage: { ...aviationBase, textColor: '#e8d4b9', backgroundColor: '#3d2b1f', backgroundOpacity: 1.0, accentColor: '#ff8c00', durationColor: '#e8d4b9', hullShape: 'full' },
   polaroid: { ...aviationBase, textColor: '#1e293b', backgroundColor: '#f8fafc', backgroundOpacity: 1.0, accentColor: '#f43f5e', durationColor: '#64748b', hullShape: 'window' },
   commodore: { ...aviationBase, textColor: '#93c5fd', backgroundColor: '#1e3a8a', backgroundOpacity: 1.0, accentColor: '#dbeafe', durationColor: '#60a5fa', hullShape: 'window' },
@@ -178,8 +177,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   monochrome: { ...aviationBase, textColor: '#000000', backgroundColor: '#ffffff', backgroundOpacity: 1.0, accentColor: '#1f2937', durationColor: '#94a3b8', hullShape: 'window-tactical' },
   amber: { ...aviationBase, textColor: '#f59e0b', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#fbbf24', durationColor: '#78350f', hullShape: 'window-tactical' },
   phosphor: { ...aviationBase, textColor: '#22c55e', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#4ade80', durationColor: '#14532d', hullShape: 'window-tactical' },
-
-  // Nature Elements
   forest: { ...aviationBase, textColor: '#f0fdf4', backgroundColor: '#064e3b', backgroundOpacity: 1.0, accentColor: '#86efac', durationColor: '#065f46', hullShape: 'window' },
   deepsea: { ...aviationBase, textColor: '#ecfeff', backgroundColor: '#083344', backgroundOpacity: 1.0, accentColor: '#67e8f9', durationColor: '#0e7490', hullShape: 'window-glass' },
   volcano: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#450a0a', backgroundOpacity: 1.0, accentColor: '#f87171', durationColor: '#dc2626', hullShape: 'window-tactical' },
@@ -196,8 +193,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   tundra: { ...aviationBase, textColor: '#1e293b', backgroundColor: '#cbd5e1', backgroundOpacity: 1.0, accentColor: '#3b82f6', durationColor: '#64748b', hullShape: 'window' },
   oasis: { ...aviationBase, textColor: '#ecfeff', backgroundColor: '#0e7490', backgroundOpacity: 1.0, accentColor: '#fcd34d', durationColor: '#22d3ee', hullShape: 'window-glass' },
   reef: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#0891b2', backgroundOpacity: 1.0, accentColor: '#cffafe', durationColor: '#155e75', hullShape: 'window' },
-
-  // Elite Luxury
   firstclass: { ...aviationBase, textColor: '#78350f', backgroundColor: '#fffbeb', backgroundOpacity: 1.0, accentColor: '#fde047', durationColor: '#92400e', hullShape: 'chamfered' },
   platinum: { ...aviationBase, textColor: '#1e293b', backgroundColor: '#f1f5f9', backgroundOpacity: 1.0, accentColor: '#cbd5e1', durationColor: '#64748b', hullShape: 'window-glass' },
   onyx: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#000000', backgroundOpacity: 1.0, accentColor: '#e5e7eb', durationColor: '#4b5563', hullShape: 'window-tactical' },
@@ -214,8 +209,6 @@ export const THEMES: Record<TickerTheme, Partial<TickerSettings>> = {
   quartz: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#fdf4ff', backgroundOpacity: 1.0, accentColor: '#f5d0fe', durationColor: '#a21caf', hullShape: 'window-glass' },
   granite: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#1f2937', backgroundOpacity: 1.0, accentColor: '#9ca3af', durationColor: '#4b5563', hullShape: 'window-tactical' },
   slate: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#334155', backgroundOpacity: 1.0, accentColor: '#94a3b8', durationColor: '#475569', hullShape: 'window' },
-
-  // Aviation Service
   concorde: { ...aviationBase, textColor: '#1e3a8a', backgroundColor: '#ffffff', backgroundOpacity: 1.0, accentColor: '#f87171', durationColor: '#1e40af', hullShape: 'window' },
   jetstream: { ...aviationBase, textColor: '#ffffff', backgroundColor: '#0ea5e9', backgroundOpacity: 1.0, accentColor: '#bae6fd', durationColor: '#bae6fd', hullShape: 'full' },
   horizon: { ...aviationBase, textColor: '#fdf5e6', backgroundColor: '#001a33', backgroundOpacity: 1.0, accentColor: '#fbbf24', durationColor: '#ffffff', hullShape: 'window-minimal' },

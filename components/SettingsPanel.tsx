@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { TickerSettings, TickerTheme, THEMES, Member, HullShape } from '../types.ts';
+import React, { useState } from 'react';
+import { TickerSettings, TickerTheme, THEMES, Member, HullShape, SavedFavorite, SortOrder } from '../types.ts';
 
 interface SettingsPanelProps {
   settings: TickerSettings;
@@ -9,6 +8,10 @@ interface SettingsPanelProps {
   insight: string;
   onExport: () => void;
   hasMembers: boolean;
+  favorites: SavedFavorite[];
+  onSave: (name: string) => void;
+  onDelete: (id: string) => void;
+  onLoad: (id: string) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ 
@@ -17,8 +20,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   tiers,
   insight,
   onExport,
-  hasMembers
+  hasMembers,
+  favorites,
+  onSave,
+  onDelete,
+  onLoad
 }) => {
+  const [saveName, setSaveName] = useState('');
+
   const updateSetting = <K extends keyof TickerSettings>(key: K, value: TickerSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
@@ -30,6 +39,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     } else {
       updateSetting('tierFilter', [...current, tier]);
     }
+  };
+
+  const handleSave = () => {
+    onSave(saveName);
+    setSaveName('');
   };
 
   const themeCategories: Record<string, TickerTheme[]> = {
@@ -56,6 +70,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     { id: 'console', label: 'Console' }
   ];
 
+  const sortOptions: { id: SortOrder; label: string }[] = [
+    { id: 'duration_desc', label: 'Longest Member' },
+    { id: 'duration_asc', label: 'Newest Member' },
+    { id: 'alpha', label: 'A-Z Alphabetical' }
+  ];
+
   return (
     <div className="bg-slate-900 text-white p-6 rounded-xl shadow-2xl border border-slate-700 max-w-md w-full overflow-y-auto max-h-[85vh] custom-scrollbar">
       <h2 className="text-2xl font-black mb-6 flex items-center gap-2 tracking-tighter italic">
@@ -69,6 +89,74 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       )}
 
       <div className="space-y-8">
+        {/* Tactical Archive Section */}
+        <section className="bg-slate-800/80 p-5 rounded-xl border border-slate-700 shadow-inner">
+          <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-400">Tactical Archive</label>
+          <div className="flex gap-2 mb-4">
+            <input 
+              type="text" 
+              placeholder="Loadout Name..." 
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-medium focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all placeholder:text-slate-700"
+            />
+            <button 
+              onClick={handleSave}
+              className="bg-cyan-600 hover:bg-cyan-500 text-black px-4 py-2 rounded-lg text-[10px] font-black uppercase italic transition-all active:scale-95"
+            >
+              Archive
+            </button>
+          </div>
+          
+          <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+            {favorites.length === 0 && (
+              <p className="text-[10px] text-slate-500 italic text-center py-2">Hangar is empty.</p>
+            )}
+            {favorites.map(fav => (
+              <div key={fav.id} className="bg-slate-900 p-3 rounded border border-slate-800 flex items-center justify-between group">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-200 truncate max-w-[120px]">{fav.name.toUpperCase()}</span>
+                  <span className="text-[8px] text-slate-500">{new Date(fav.timestamp).toLocaleDateString()}</span>
+                </div>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => onLoad(fav.id)}
+                    className="text-[9px] font-black text-cyan-500 hover:text-cyan-400 uppercase"
+                  >
+                    Load
+                  </button>
+                  <button 
+                    onClick={() => onDelete(fav.id)}
+                    className="text-[9px] font-black text-red-500 hover:text-red-400 uppercase"
+                  >
+                    Scrap
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Sorting Sector */}
+        <section>
+          <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-500">Sorting Protocol</label>
+          <div className="grid grid-cols-1 gap-2">
+            {sortOptions.map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => updateSetting('sortOrder', opt.id)}
+                className={`px-3 py-2 rounded text-[9px] font-black transition-all border text-left ${
+                  settings.sortOrder === opt.id 
+                    ? 'bg-cyan-500 text-black border-cyan-300' 
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'
+                }`}
+              >
+                {opt.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Custom Message Section */}
         <section className="bg-slate-800/80 p-5 rounded-xl border border-slate-700 shadow-inner">
           <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-400">Broadcast Message</label>
@@ -145,7 +233,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         {/* Tier Filter Section */}
         {tiers.length > 0 && (
           <section>
-            <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Tier Manifest</label>
+            <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-slate-500">Tier Members</label>
             <div className="flex flex-wrap gap-2">
               {tiers.map(tier => (
                 <button
@@ -179,12 +267,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-500">Hull Dimensions</label>
           <Slider label="Widget Width" min={10} max={100} value={settings.widgetWidth} onChange={(v: number) => updateSetting('widgetWidth', v)} unit="%" />
           <Slider label="Overall Height" min={40} max={400} value={settings.widgetHeight} onChange={(v: number) => updateSetting('widgetHeight', v)} unit="px" />
+          <Slider label="Vertical Alignment" min={-100} max={100} value={settings.verticalOffset} onChange={(v: number) => updateSetting('verticalOffset', v)} unit="px" />
         </section>
 
         {/* Sliders */}
         <section className="space-y-6">
           <Slider label="Ground Speed" min={5} max={300} value={settings.speed} onChange={(v: number) => updateSetting('speed', v)} unit="s" />
-          <Slider label="Text Scale" min={12} max={100} value={settings.fontSize} onChange={(v: number) => updateSetting('fontSize', v)} unit="px" />
+          <Slider label="Primary Font Scale" min={12} max={100} value={settings.fontSize} onChange={(v: number) => updateSetting('fontSize', v)} unit="px" />
+          <Slider label="Duration Font Scale" min={6} max={50} value={settings.durationFontSize} onChange={(v: number) => updateSetting('durationFontSize', v)} unit="px" />
           <Slider label="Hull Opacity" min={0} max={100} value={settings.backgroundOpacity * 100} onChange={(v: number) => updateSetting('backgroundOpacity', v / 100)} unit="%" />
           <Slider label="Kerning (Letter Space)" min={-10} max={40} value={settings.letterSpacing} onChange={(v: number) => updateSetting('letterSpacing', v)} unit="px" />
           <Slider label="Pod Compression" min={0.5} max={2.0} value={settings.lineHeight} onChange={(v: number) => updateSetting('lineHeight', v)} step={0.1} />
