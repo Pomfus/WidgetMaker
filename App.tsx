@@ -160,6 +160,13 @@ const App: React.FC = () => {
             case 'window-tactical': return 'inset(0% round 0px)';
             case 'window-minimal': return 'none';
             case 'full-bottom': return 'none';
+            case 'afterburner': return 'polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%)';
+            case 'delta-fin': return 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)';
+            case 'supersonic': return 'polygon(0% 30%, 100% 0%, 100% 100%, 0% 70%)';
+            case 'chevron-wing': return 'polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%)';
+            case 'wingtip-l': return 'polygon(0% 0%, 100% 0%, 100% 100%, 15% 100%)';
+            case 'stealth-v': return 'polygon(0% 0%, 100% 0%, 95% 50%, 100% 100%, 0% 100%, 5% 50%)';
+            case 'radar-array': return 'polygon(0% 15%, 15% 0%, 85% 0%, 100% 15%, 100% 85%, 85% 100%, 15% 100%, 0% 85%)';
             default: return 'none';
         }
     };
@@ -322,7 +329,7 @@ const App: React.FC = () => {
             
             setTimeout(() => {
                 const tier = (tiers.length > 0) ? tiers[currentTierIdx] : null;
-                document.getElementById('tier-name').innerText = tier ? tier.toUpperCase() : 'SQUADRON';
+                document.getElementById('tier-name').innerText = tier ? tier.toUpperCase() : 'MEMBERSHIP';
                 document.getElementById('icon-svg').innerHTML = getRankIcon(currentTierIdx + 1, settings.accentColor, ${iconSize});
                 
                 let filtered = tier ? membersData.filter(m => m.tier === tier) : [];

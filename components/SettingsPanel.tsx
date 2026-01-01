@@ -6,9 +6,7 @@ interface SharedProps {
   setSettings: React.Dispatch<React.SetStateAction<TickerSettings>>;
 }
 
-interface PresetsPanelProps extends SharedProps {}
-
-export const PresetsPanel: React.FC<PresetsPanelProps> = ({ settings, setSettings }) => {
+export const PresetsPanel: React.FC<SharedProps> = ({ settings, setSettings }) => {
   const themeCategories: Record<string, TickerTheme[]> = {
     'Sector: Tactical Wing': ['tomcat', 'raptor', 'flanker', 'afterburner', 'dogfight', 'mach1', 'strike', 'falcon', 'harrier', 'phantom', 'mustang', 'zero', 'thunderbolt', 'delta', 'vigilante', 'intruder'],
     'Sector: Control Tower': ['radar', 'tower', 'terminal', 'signal', 'beacon', 'relay', 'uplink', 'comms', 'frequency', 'static', 'bandwidth', 'latency'],
@@ -101,6 +99,13 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
     { id: 'window-glass', label: 'Glass HUD' },
     { id: 'window-minimal', label: 'Minimal HUD' },
     { id: 'window-tactical', label: 'Tactical HUD' },
+    { id: 'afterburner', label: 'Afterburner' },
+    { id: 'stealth-v', label: 'Stealth V' },
+    { id: 'delta-fin', label: 'Delta Fin' },
+    { id: 'supersonic', label: 'Supersonic' },
+    { id: 'chevron-wing', label: 'Chevron' },
+    { id: 'wingtip-l', label: 'Wingtip' },
+    { id: 'radar-array', label: 'Radar Array' },
     { id: 'chamfered', label: 'Chamfered' },
     { id: 'console', label: 'Console' }
   ];
@@ -137,6 +142,28 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
             ))}
           </div>
         </section>
+
+        {/* Tier Selection */}
+        {tiers.length > 0 && (
+          <section>
+            <label className="block text-[10px] font-black mb-3 uppercase tracking-[0.2em] text-cyan-500">Membership Tiers</label>
+            <div className="grid grid-cols-1 gap-2">
+              {tiers.map(tier => (
+                <button
+                  key={tier}
+                  onClick={() => toggleTier(tier)}
+                  className={`px-3 py-2 rounded text-[9px] font-black transition-all border text-left truncate ${
+                    settings.tierFilter.includes(tier) 
+                      ? 'bg-cyan-600 text-white border-cyan-400' 
+                      : 'bg-slate-800 text-slate-500 border-slate-700 hover:border-slate-500'
+                  }`}
+                >
+                  {tier.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Custom Message Section */}
         <section className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
@@ -183,7 +210,9 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
           <Slider label="Primary Font" min={12} max={100} value={settings.fontSize} onChange={(v: number) => updateSetting('fontSize', v)} unit="px" />
           <Slider label="Duration Font" min={6} max={50} value={settings.durationFontSize} onChange={(v: number) => updateSetting('durationFontSize', v)} unit="px" />
           <Slider label="Hull Opacity" min={0} max={100} value={settings.backgroundOpacity * 100} onChange={(v: number) => updateSetting('backgroundOpacity', v / 100)} unit="%" />
+          <Slider label="Pod Spacing" min={0} max={500} value={settings.gap} onChange={(v: number) => updateSetting('gap', v)} unit="px" />
           <Slider label="Pod Kerning" min={-10} max={40} value={settings.letterSpacing} onChange={(v: number) => updateSetting('letterSpacing', v)} unit="px" />
+          <Slider label="Vertical Trim" min={-100} max={100} value={settings.verticalOffset} onChange={(v: number) => updateSetting('verticalOffset', v)} unit="px" />
           <Slider label="Compression" min={0.5} max={2.0} value={settings.lineHeight} onChange={(v: number) => updateSetting('lineHeight', v)} step={0.1} />
         </section>
 

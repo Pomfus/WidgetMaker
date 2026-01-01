@@ -38,7 +38,9 @@ export type TickerTheme =
   // Aviation Service
   | 'concorde' | 'jetstream' | 'horizon' | 'kittyhawk' | 'spitfire' | 'propeller' | 'terminal_b';
 
-export type HullShape = 'full' | 'chamfered' | 'console' | 'window' | 'window-glass' | 'window-minimal' | 'window-tactical' | 'full-bottom';
+export type HullShape = 
+  | 'full' | 'chamfered' | 'console' | 'window' | 'window-glass' | 'window-minimal' | 'window-tactical' | 'full-bottom'
+  | 'afterburner' | 'delta-fin' | 'supersonic' | 'chevron-wing' | 'wingtip-l' | 'stealth-v' | 'radar-array';
 
 export interface TickerSettings {
   speed: number;

@@ -117,7 +117,6 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
   };
 
   const formatDuration = (totalMonths: string) => {
-    // Math.floor to handle any float months from parsing correctly
     const m = Math.floor(parseFloat(totalMonths) || 0);
     const yrs = Math.floor(m / 12);
     const rem = m % 12;
@@ -195,6 +194,13 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
       case 'window-tactical': return 'inset(0% round 0px)';
       case 'window-minimal': return 'none';
       case 'full-bottom': return 'none';
+      case 'afterburner': return 'polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%)';
+      case 'delta-fin': return 'polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%)';
+      case 'supersonic': return 'polygon(0% 30%, 100% 0%, 100% 100%, 0% 70%)';
+      case 'chevron-wing': return 'polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%)';
+      case 'wingtip-l': return 'polygon(0% 0%, 100% 0%, 100% 100%, 15% 100%)';
+      case 'stealth-v': return 'polygon(0% 0%, 100% 0%, 95% 50%, 100% 100%, 0% 100%, 5% 50%)';
+      case 'radar-array': return 'polygon(0% 15%, 15% 0%, 85% 0%, 100% 15%, 100% 85%, 85% 100%, 15% 100%, 0% 85%)';
       default: return 'none';
     }
   };
@@ -281,7 +287,7 @@ export const Ticker: React.FC<TickerProps> = ({ members, settings }) => {
               fontSize: `${badgeFontSize}px`
             }}
           >
-            {currentTierName || 'SQUADRON'}
+            {currentTierName || 'MEMBERSHIP'}
           </span>
           <span 
             className="font-black uppercase tracking-[0.2em] opacity-40 leading-none mt-1 text-center"
