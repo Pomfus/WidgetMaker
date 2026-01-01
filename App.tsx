@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Member, TickerSettings, THEMES, SavedFavorite, SortOrder } from './types.ts';
-import { SettingsPanel } from './components/SettingsPanel.tsx';
+import { PresetsPanel, ControlsPanel } from './components/SettingsPanel.tsx';
 import { Ticker } from './components/Ticker.tsx';
 import { analyzeCsvStructure, getTierInsights } from './services/geminiService.ts';
 
@@ -110,8 +110,6 @@ const App: React.FC = () => {
 
         const parsedMembers: Member[] = rows.slice(1).map(row => {
           const rawMonths = row[mapping!.monthsIndex]?.replace(/"/g, '').trim() || '0';
-          // Use parseFloat to preserve decimal points, then floor for total months 
-          // to avoid logic errors with string stripping.
           const totalMonthsVal = parseFloat(rawMonths.replace(/[^-0-9.]/g, '')) || 0;
           
           return {
@@ -405,60 +403,73 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-4">
+    <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center p-6 overflow-hidden">
       <div className={`fixed top-4 left-4 z-50 transition-opacity duration-300 ${showSettings ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
         <button 
           onClick={() => setShowSettings(!showSettings)}
           className="bg-cyan-600 hover:bg-cyan-500 text-black px-6 py-2 rounded-lg shadow-2xl font-black text-xs uppercase tracking-widest italic focus:outline-none focus:ring-2 focus:ring-cyan-400"
         >
-          {showSettings ? 'TERMINATE UI' : 'ACCESS DASHBOARD'}
+          {showSettings ? 'TERMINATE HUD' : 'REBOOT SYSTEM'}
         </button>
       </div>
 
       {showSettings && (
-        <div className="z-40 w-full max-w-6xl grid md:grid-cols-2 gap-8 items-start mb-20 md:mb-0">
-          <div className="bg-slate-900/95 backdrop-blur-xl border-2 border-slate-700 rounded-2xl p-10 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
+        <div className="z-40 w-full max-w-[1500px] grid md:grid-cols-3 gap-6 h-[85vh]">
+          
+          {/* Box 1: CSV Importer */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-2 border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 -rotate-45 translate-x-16 -translate-y-16 border border-cyan-500/10 pointer-events-none"></div>
             
-            <div className="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mb-8 border border-cyan-500/20 relative group">
-              <div className="absolute inset-0 rounded-full border border-cyan-500/40 animate-ping opacity-20"></div>
-              <svg className="w-12 h-12 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </div>
-            
-            <h3 className="text-3xl font-black text-white mb-2 tracking-tighter uppercase italic">IPS Ticker Builder</h3>
-            <p className="text-slate-400 text-sm mb-10 font-mono uppercase tracking-tight">Deployment Ready: Web & Desktop</p>
-            
-            <div className="flex flex-col gap-4 w-full max-w-xs">
-              <label className="cursor-pointer bg-cyan-500 text-black px-12 py-4 rounded-xl font-black hover:bg-cyan-400 transition-all uppercase tracking-tighter shadow-[0_10px_30px_rgba(6,182,212,0.3)] active:scale-95 text-lg text-center select-none">
-                {isLoading ? 'ANALYZING...' : 'IMPORT CSV'}
-                <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-              </label>
-              <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">Step 1: Upload Members CSV</p>
-            </div>
-            
-            {members.length > 0 && (
-              <div className="mt-10 bg-slate-800/80 p-4 rounded-lg border border-cyan-500/20 text-cyan-400 font-mono text-[10px] tracking-widest animate-pulse">
-                [SYSTEM_STATUS: NOMINAL] [LOADED: {members.length} ENTRIES]
+            <div className="p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar h-full w-full">
+              <div className="w-20 h-20 bg-cyan-500/10 rounded-full flex items-center justify-center mb-6 border border-cyan-500/20 relative group shrink-0">
+                <div className="absolute inset-0 rounded-full border border-cyan-500/40 animate-ping opacity-20"></div>
+                <svg className="w-10 h-10 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
               </div>
-            )}
-            
-            <div className="mt-12 text-left w-full border-t border-slate-800 pt-8">
-               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deployment Guide</h4>
-               <ul className="text-xs space-y-3 text-slate-400 font-medium">
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">01</span> Customize visual HUD and fonts.</li>
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">02</span> Save to **Tactical Archive** for future edits.</li>
-                  <li className="flex gap-3"><span className="text-cyan-500 font-black">03</span> Deploy as standalone .html for OBS.</li>
-               </ul>
+              
+              <h3 className="text-2xl font-black text-white mb-2 tracking-tighter uppercase italic shrink-0">CSV IMPORTER</h3>
+              <p className="text-slate-400 text-[10px] mb-8 font-mono uppercase tracking-widest shrink-0">DEPLOYMENT SECTOR: ALPHA</p>
+              
+              <div className="flex flex-col gap-4 w-full shrink-0">
+                <label className="cursor-pointer bg-cyan-500 text-black px-8 py-4 rounded-xl font-black hover:bg-cyan-400 transition-all uppercase tracking-tighter shadow-lg active:scale-95 text-md text-center select-none">
+                  {isLoading ? 'ANALYZING...' : 'IMPORT ROSTER'}
+                  <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+                </label>
+                <div className="p-4 bg-slate-950/50 rounded-lg border border-slate-800">
+                  <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-2">Community Intel</p>
+                  <div className="text-xs italic text-cyan-200 font-mono">
+                    {insight || "Waiting for CSV data upload..."}
+                  </div>
+                </div>
+              </div>
+              
+              {members.length > 0 && (
+                <div className="mt-6 w-full bg-slate-800/80 p-3 rounded-lg border border-cyan-500/20 text-cyan-400 font-mono text-[9px] tracking-widest animate-pulse shrink-0">
+                  STATUS: NOMINAL | ENTRIES: {members.length}
+                </div>
+              )}
+
+              <div className="mt-12 text-left w-full border-t border-slate-800 pt-6">
+                <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">FLIGHT MANUAL</h4>
+                <ul className="text-[10px] space-y-3 text-slate-400 font-medium">
+                    <li className="flex gap-2"><span className="text-cyan-500 font-black">1.</span> Upload Members_list.csv</li>
+                    <li className="flex gap-2"><span className="text-cyan-500 font-black">2.</span> Choose an Aesthetic Preset</li>
+                    <li className="flex gap-2"><span className="text-cyan-500 font-black">3.</span> Tune tactical HUD sliders</li>
+                    <li className="flex gap-2"><span className="text-cyan-500 font-black">4.</span> Deploy to OBS Browser Source</li>
+                </ul>
+              </div>
             </div>
           </div>
 
-          <SettingsPanel 
+          {/* Box 2: Aesthetic Presets */}
+          <PresetsPanel settings={settings} setSettings={setSettings} />
+
+          {/* Box 3: All Sliders & Controls */}
+          <ControlsPanel 
             settings={settings} 
             setSettings={setSettings} 
             tiers={tiers}
-            insight={insight}
             onExport={exportStandaloneWidget}
             hasMembers={members.length > 0}
             favorites={favorites}
